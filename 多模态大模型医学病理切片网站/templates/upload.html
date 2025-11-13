@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+
+{% block title %}上传切片 - 医学病理切片分析系统{% endblock %}
+
+{% block css %}
+<style>
+    .upload-container {
+        max-width: 800px;
+        margin: 0 auto;
+        background-color: #f8f9fa;
+        padding: 30px;
+        border-radius: 8px;
+    }
+    .file-drop-area {
+        border: 2px dashed #0d6efd;
+        border-radius: 8px;
+        padding: 60px 20px;
+        text-align: center;
+        transition: all 0.3s ease;
+        background-color: white;
+    }
+    .file-drop-area.drag-over {
+        border-color: #198754;
+        background-color: #f1f8e9;
+    }
+    .file-drop-area:hover {
+        border-color: #0a58ca;
+    }
+    .file-input {
+        display: none;
+    }
+    .upload-button {
+        margin-top: 20px;
+    }
+    .file-info {
+        margin-top: 20px;
+        font-size: 0.9rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="upload-container">
+    <h2 class="text-center mb-4">上传病理切片</h2>
+    <form method="POST" enctype="multipart/form-data" id="upload-form">
+        <div class="file-drop-area" id="file-drop-area">
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="#0d6efd" class="bi bi-cloud-upload" viewBox="0 0 16 16">
+                <path fill-rule="evenodd" d="M4.406 1.342A5.53 5.53 0 0 1 8 0c2.69 0 4.923 2 5.166 4.579C14.758 4.804 16 6.137 16 7.773 16 9.569 14.502 11 12.687 11H10a.5.5 0 0 1 0-1h2.688C13.979 10 15 8.988 15 7.773c0-1.216-1.02-2.228-2.313-2.228h-.5v-.5C12.188 2.825 10.328 1 8 1a4.53 4.53 0 0 0-2.941 1.1c-.757.652-1.153 1.438-1.153 2.055v.448l-.445.049C2.064 4.805 1 5.952 1 7.318 1 8.785 2.23 10 3.781 10H6a.5.5 0 0 1 0 1H3.781C1.708 11 0 9.366 0 7.318c0-1.763 1.266-3.223 2.942-3.593.143-.863.698-1.723 1.464-2.383z"/>
+                <path fill-rule="evenodd" d="M7.646 4.854a.5.5 0 0 0-.708 0l-3 3a.5.5 0 0 0-.146.351v4.5a.5.5 0 0 0 .5.5h10a.5.5 0 0 0 .5-.5v-4.5a.5.5 0 0 0-.146-.351l-3-3a.5.5 0 0 0-.708 0z"/>
+                <path fill-rule="evenodd" d="M8 4.5a.5.5 0 0 1 .5.5v3.793l1.146-1.147a.5.5 0 0 1 .708.708l-2 2a.5.5 0 0 1-.708 0l-2-2a.5.5 0 1 1 .708-.708L7.5 8.793V5a.5.5 0 0 1 .5-.5z"/>
+            </svg>
+            <p class="mt-3">将病理切片文件拖放到此处，或</p>
+            <label for="file-input" class="btn btn-primary">选择文件</label>
+            <input type="file" id="file-input" name="file" class="file-input" accept=".png,.jpg,.jpeg,.tiff,.bmp,.svs">
+            <p id="file-name" class="mt-2 text-muted"></p>
+        </div>
+        <div class="text-center upload-button">
+            <button type="submit" class="btn btn-success btn-lg">开始上传</button>
+        </div>
+    </form>
+    <div class="file-info bg-white p-3 rounded mt-4">
+        <h5>上传须知：</h5>
+        <ul class="list-unstyled">
+            <li>• 支持的文件格式：PNG、JPG、JPEG、TIFF、BMP、SVS</li>
+            <li>• 最大文件大小：16MB</li>
+            <li>• 上传后系统将自动分析切片内容</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+    // 文件拖放功能
+    const fileDropArea = document.getElementById('file-drop-area');
+    const fileInput = document.getElementById('file-input');
+    const fileName = document.getElementById('file-name');
+    
+    // 拖放事件
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        fileDropArea.addEventListener(eventName, preventDefaults, false);
+    });
+    
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    
+    ['dragenter', 'dragover'].forEach(eventName => {
+        fileDropArea.addEventListener(eventName, highlight, false);
+    });
+    
+    ['dragleave', 'drop'].forEach(eventName => {
+        fileDropArea.addEventListener(eventName, unhighlight, false);
+    });
+    
+    function highlight() {
+        fileDropArea.classList.add('drag-over');
+    }
+    
+    function unhighlight() {
+        fileDropArea.classList.remove('drag-over');
+    }
+    
+    // 处理拖放文件
+    fileDropArea.addEventListener('drop', handleDrop, false);
+    
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const file = dt.files[0];
+        
+        if (file) {
+            handleFiles(file);
+        }
+    }
+    
+    // 处理文件选择
+    fileInput.addEventListener('change', function() {
+        if (this.files.length > 0) {
+            handleFiles(this.files[0]);
+        }
+    });
+    
+    function handleFiles(file) {
+        fileName.textContent = `已选择：${file.name}`;
+        // 可以在这里添加文件类型和大小验证
+    }
+    
+    // 表单验证
+    document.getElementById('upload-form').addEventListener('submit', function(e) {
+        if (!fileInput.files.length) {
+            e.preventDefault();
+            alert('请先选择一个文件');
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,221 @@
+{% extends 'base.html' %}
+
+{% block title %}查看切片 - 医学病理切片分析系统{% endblock %}
+
+{% block css %}
+<style>
+    .slide-container {
+        position: relative;
+        overflow: hidden;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        background-color: #f5f5f5;
+    }
+    .slide-viewer {
+        width: 100%;
+        height: 600px;
+        background-color: #f8f9fa;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+    }
+    .slide-controls {
+        position: absolute;
+        bottom: 20px;
+        right: 20px;
+        display: flex;
+        gap: 10px;
+        background-color: rgba(255, 255, 255, 0.9);
+        padding: 10px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    .control-btn {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        background-color: white;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .control-btn:hover {
+        background-color: #0d6efd;
+        color: white;
+        border-color: #0d6efd;
+    }
+    .slide-info {
+        background-color: white;
+        padding: 20px;
+        border-radius: 8px;
+        margin-top: 20px;
+    }
+    .loading-indicator {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+    .spinner-border {
+        width: 3rem;
+        height: 3rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+    <h2>病理切片查看</h2>
+    <p class="text-muted">文件：{{ filename }}</p>
+</div>
+
+<div class="slide-container">
+    <div class="slide-viewer" id="slide-viewer">
+        <div class="loading-indicator" id="loading-indicator">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">加载中...</span>
+            </div>
+            <p class="mt-2">正在加载病理切片，请稍候...</p>
+        </div>
+        <!-- 切片图像将在这里显示 -->
+        <img id="slide-image" src="" alt="病理切片" class="d-none" style="max-width: 100%; max-height: 100%;">
+    </div>
+    
+    <div class="slide-controls">
+        <button class="control-btn" id="zoom-in" title="放大">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-zoom-in" viewBox="0 0 16 16">
+                <path d="M6.5 12a5.5 5.5 0 1 0 0-11 5.5 5.5 0 0 0 0 11zM13 6.5a6.5 6.5 0 1 1-13 0 6.5 6.5 0 0 1 13 0z"/>
+                <path d="M10.344 11.742c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM11.752 8a3.752 3.752 0 1 1-7.504 0 3.752 3.752 0 0 1 7.504 0zM10.5 8a2.5 2.5 0 1 0-5 0 2.5 2.5 0 0 0 5 0z"/>
+            </svg>
+        </button>
+        <button class="control-btn" id="zoom-out" title="缩小">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-zoom-out" viewBox="0 0 16 16">
+                <path d="M6.5 12a5.5 5.5 0 1 0 0-11 5.5 5.5 0 0 0 0 11zM13 6.5a6.5 6.5 0 1 1-13 0 6.5 6.5 0 0 1 13 0z"/>
+                <path d="M10.344 11.742c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM11.752 8a3.752 3.752 0 1 1-7.504 0 3.752 3.752 0 0 1 7.504 0z"/>
+            </svg>
+        </button>
+        <button class="control-btn" id="reset-view" title="重置视图">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-repeat" viewBox="0 0 16 16">
+                <path d="M11.534 7h3.932a.25.25 0 0 1 .192.41l-1.966 2.36a.25.25 0 0 1-.384 0l-1.966-2.36a.25.25 0 0 1 .192-.41zm-11 2h3.932a.25.25 0 0 0 .192-.41L2.692 6.23a.25.25 0 0 0-.384 0L.342 8.59A.25.25 0 0 0 .534 9z"/>
+                <path fill-rule="evenodd" d="M8 3c-1.552 0-2.94.707-3.857 1.818a.5.5 0 1 1-.771-.636A6.002 6.002 0 0 1 13.917 7H12.9A5.002 5.002 0 0 0 8 3zM3.1 9a5.002 5.002 0 0 0 8.757 2.182.5.5 0 1 1 .771.636A6.002 6.002 0 0 1 2.083 9H3.1z"/>
+            </svg>
+        </button>
+    </div>
+</div>
+
+<div class="slide-info">
+    <h4>切片信息</h4>
+    <div class="row" id="slide-metadata">
+        <div class="col-md-4">
+            <p><strong>文件名：</strong> {{ filename }}</p>
+        </div>
+        <div class="col-md-4">
+            <p><strong>文件大小：</strong> <span id="file-size">加载中...</span></p>
+        </div>
+        <div class="col-md-4">
+            <p><strong>上传时间：</strong> <span id="upload-time">刚刚</span></p>
+        </div>
+    </div>
+    
+    <div class="mt-4">
+        <h5>分析结果</h5>
+        <div class="alert alert-info">
+            <p>系统正在分析切片内容，请稍候...</p>
+        </div>
+    </div>
+</div>
+
+<div class="mt-4">
+    <a href="{{ url_for('upload') }}" class="btn btn-secondary">上传新切片</a>
+    <a href="{{ url_for('index') }}" class="btn btn-primary">返回首页</a>
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const filename = '{{ filename }}';
+        const slideImage = document.getElementById('slide-image');
+        const loadingIndicator = document.getElementById('loading-indicator');
+        const fileSizeElement = document.getElementById('file-size');
+        
+        // 模拟加载切片图像（实际应该从服务器获取）
+        setTimeout(() => {
+            // 在实际应用中，这里应该是服务器端提供的图像URL
+            // 现在使用一个占位符图像
+            slideImage.src = 'https://via.placeholder.com/1200x800?text=病理切片+预览';
+            slideImage.classList.remove('d-none');
+            loadingIndicator.classList.add('d-none');
+        }, 1500);
+        
+        // 获取切片信息
+        fetch(`/api/slide/${filename}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    console.error('获取切片信息失败:', data.error);
+                    return;
+                }
+                
+                // 格式化文件大小
+                const size = data.size;
+                let formattedSize;
+                if (size < 1024) {
+                    formattedSize = size + ' B';
+                } else if (size < 1024 * 1024) {
+                    formattedSize = (size / 1024).toFixed(2) + ' KB';
+                } else {
+                    formattedSize = (size / (1024 * 1024)).toFixed(2) + ' MB';
+                }
+                
+                fileSizeElement.textContent = formattedSize;
+            })
+            .catch(error => {
+                console.error('获取切片信息时出错:', error);
+            });
+        
+        // 缩放控制
+        let scale = 1;
+        const zoomInBtn = document.getElementById('zoom-in');
+        const zoomOutBtn = document.getElementById('zoom-out');
+        const resetViewBtn = document.getElementById('reset-view');
+        
+        zoomInBtn.addEventListener('click', function() {
+            scale *= 1.2;
+            updateImageTransform();
+        });
+        
+        zoomOutBtn.addEventListener('click', function() {
+            scale /= 1.2;
+            updateImageTransform();
+        });
+        
+        resetViewBtn.addEventListener('click', function() {
+            scale = 1;
+            updateImageTransform();
+        });
+        
+        function updateImageTransform() {
+            slideImage.style.transform = `scale(${scale})`;
+        }
+        
+        // 模拟分析结果更新
+        setTimeout(() => {
+            const analysisResult = document.querySelector('.slide-info .alert');
+            analysisResult.className = 'alert alert-success';
+            analysisResult.innerHTML = `
+                <p><strong>分析完成！</strong></p>
+                <ul>
+                    <li>检测到细胞结构正常</li>
+                    <li>无明显异常区域</li>
+                    <li>建议：定期复查</li>
+                </ul>
+            `;
+        }, 3000);
+    });
+</script>
+{% endblock %}

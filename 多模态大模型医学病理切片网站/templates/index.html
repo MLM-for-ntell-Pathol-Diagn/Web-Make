@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+
+{% block title %}首页 - 医学病理切片分析系统{% endblock %}
+
+{% block css %}
+<style>
+    .hero-section {
+        padding: 60px 0;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        margin-bottom: 30px;
+    }
+    .feature-card {
+        height: 100%;
+        transition: transform 0.3s ease;
+    }
+    .feature-card:hover {
+        transform: translateY(-5px);
+    }
+    .feature-icon {
+        font-size: 3rem;
+        color: #0d6efd;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="hero-section text-center">
+    <h1 class="display-4 mb-4">多模态大模型医学病理切片分析系统</h1>
+    <p class="lead mb-5">利用先进的人工智能技术，为病理学家提供高效、准确的切片分析工具</p>
+    <a href="{{ url_for('upload') }}" class="btn btn-primary btn-lg">开始上传分析</a>
+</div>
+
+<div class="row mb-5">
+    <div class="col-lg-4 mb-4">
+        <div class="card feature-card">
+            <div class="card-body text-center">
+                <div class="feature-icon mb-3">📊</div>
+                <h5 class="card-title">智能分析</h5>
+                <p class="card-text">基于多模态大模型的病理切片智能分析，提供准确的诊断辅助</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4 mb-4">
+        <div class="card feature-card">
+            <div class="card-body text-center">
+                <div class="feature-icon mb-3">🔍</div>
+                <h5 class="card-title">高清浏览</h5>
+                <p class="card-text">支持多种格式病理切片的高清浏览，支持缩放、平移等操作</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4 mb-4">
+        <div class="card feature-card">
+            <div class="card-body text-center">
+                <div class="feature-icon mb-3">⚡</div>
+                <h5 class="card-title">高效处理</h5>
+                <p class="card-text">优化的图像处理算法，确保大文件快速上传和实时分析</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mb-5">
+    <h2 class="mb-3">支持的文件格式</h2>
+    <div class="bg-light p-4 rounded">
+        <p>我们支持多种常用的病理切片格式，包括：</p>
+        <ul class="list-inline">
+            <li class="list-inline-item m-2 p-2 bg-white rounded">PNG</li>
+            <li class="list-inline-item m-2 p-2 bg-white rounded">JPG/JPEG</li>
+            <li class="list-inline-item m-2 p-2 bg-white rounded">TIFF</li>
+            <li class="list-inline-item m-2 p-2 bg-white rounded">BMP</li>
+            <li class="list-inline-item m-2 p-2 bg-white rounded">SVS</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+    // 可以在这里添加首页的交互逻辑
+</script>
+{% endblock %}
