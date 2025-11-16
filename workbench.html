@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>多模态智能病理诊断工作台</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    :root {
+      --bg: #f3f4f6;
+      --sidebar-bg: #111827;
+      --primary: #2563eb;
+      --primary-soft: #dbeafe;
+      --card-bg: #ffffff;
+      --border: #e5e7eb;
+      --text-main: #111827;
+      --text-sub: #6b7280;
+      --radius: 14px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI","PingFang SC",
+                   "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--text-main);
+      height: 100vh;
+      display: flex;
+      overflow: hidden;
+    }
+    a { color: inherit; text-decoration: none; }
+
+    /* 左侧病例列表 */
+    .sidebar {
+      width: 260px;
+      background: var(--sidebar-bg);
+      color: #e5e7eb;
+      display: flex;
+      flex-direction: column;
+    }
+    .sidebar-header {
+      padding: 16px 18px 10px;
+      border-bottom: 1px solid rgba(55,65,81,0.9);
+    }
+    .sidebar-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .sidebar-subtitle {
+      font-size: 12px;
+      color: #9ca3af;
+    }
+    .sidebar-actions {
+      padding: 10px 18px;
+    }
+    .btn-small {
+      padding: 6px 10px;
+      font-size: 12px;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      background: var(--primary);
+      color: #fff;
+    }
+    .case-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 6px 10px 10px;
+    }
+    .case-item {
+      padding: 8px 10px;
+      margin-bottom: 6px;
+      border-radius: 10px;
+      background: rgba(31,41,55,0.7);
+      cursor: pointer;
+      border: 1px solid transparent;
+    }
+    .case-item:hover {
+      background: rgba(55,65,81,0.9);
+    }
+    .case-item.active {
+      border-color: var(--primary);
+      background: rgba(37,99,235,0.2);
+    }
+    .case-name {
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .case-meta {
+      font-size: 11px;
+      color: #9ca3af;
+      margin-top: 2px;
+    }
+    .sidebar-footer {
+      padding: 8px 12px 10px;
+      font-size: 11px;
+      color: #9ca3af;
+      border-top: 1px solid rgba(55,65,81,0.9);
+    }
+
+    /* 主区域布局 */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .topbar {
+      height: 54px;
+      background: #ffffff;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 18px;
+    }
+    .topbar-left {
+      display: flex;
+      flex-direction: column;
+    }
+    .topbar-title {
+      font-size: 15px;
+      font-weight: 600;
+    }
+    .topbar-sub {
+      font-size: 12px;
+      color: var(--text-sub);
+    }
+    .topbar-right {
+      font-size: 12px;
+      color: var(--text-sub);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .avatar {
+      width: 24px;
+      height: 24px;
+      border-radius: 999px;
+      background: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 12px;
+    }
+
+    .content {
+      flex: 1;
+      display: grid;
+      grid-template-columns: minmax(0, 2.3fr) minmax(260px, 1.2fr);
+      gap: 10px;
+      padding: 10px 12px;
+      overflow: hidden;
+    }
+
+    /* 中间：步骤 + 主操作 */
+    .workspace {
+      background: transparent;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .stepper {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .step {
+      background: #ffffff;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      padding: 4px 10px;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+    .step-number {
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      color: var(--text-sub);
+    }
+    .step.active {
+      border-color: var(--primary);
+      background: var(--primary-soft);
+      color: #1d4ed8;
+    }
+    .step.active .step-number {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+
+    .workspace-card {
+      flex: 1;
+      background: #ffffff;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      padding: 12px 14px;
+      overflow-y: auto;
+      font-size: 13px;
+    }
+    .step-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .step-title {
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .step-desc {
+      font-size: 12px;
+      color: var(--text-sub);
+    }
+    .step-page {
+      display: none;
+    }
+    .step-page.active {
+      display: block;
+    }
+
+    .field-group {
+      margin-top: 10px;
+    }
+    .field-label {
+      font-size: 12px;
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+    .field-note {
+      font-size: 11px;
+      color: var(--text-sub);
+      margin-top: 2px;
+    }
+    input[type="file"],
+    select,
+    textarea {
+      font-family: inherit;
+      font-size: 12px;
+    }
+    input[type="file"] {
+      width: 100%;
+      margin-top: 4px;
+    }
+    .pill-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+    }
+    .pill-tag {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: #f3f4f6;
+      border: 1px solid #e5e7eb;
+    }
+    .btn-primary {
+      padding: 7px 14px;
+      font-size: 12px;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      background: var(--primary);
+      color: #fff;
+    }
+    .btn-plain {
+      padding: 6px 10px;
+      font-size: 12px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: #fff;
+      cursor: pointer;
+      color: var(--text-main);
+    }
+    .file-list {
+      margin-top: 6px;
+      font-size: 12px;
+      color: var(--text-sub);
+    }
+
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 90px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      padding: 6px 8px;
+      resize: vertical;
+    }
+
+    .status {
+      font-size: 12px;
+      color: var(--text-sub);
+      margin-top: 6px;
+    }
+
+    /* 右侧：AI 结果/报告预览 */
+    .side-panel {
+      background: #ffffff;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+    .side-panel-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .side-panel-sub {
+      font-size: 12px;
+      color: var(--text-sub);
+      margin-bottom: 8px;
+    }
+    .side-section-title {
+      font-size: 12px;
+      font-weight: 500;
+      margin-top: 8px;
+      margin-bottom: 3px;
+    }
+    .side-box {
+      background: #f9fafb;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      padding: 6px 8px;
+      font-size: 12px;
+      color: var(--text-sub);
+    }
+    .side-panel textarea {
+      min-height: 120px;
+    }
+
+    @media (max-width: 960px) {
+      .sidebar {
+        display: none;
+      }
+      .content {
+        grid-template-columns: minmax(0,1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- 左侧：病例列表 -->
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">病例列表</div>
+      <div class="sidebar-subtitle">选择或新建病例进行诊断</div>
+    </div>
+    <div class="sidebar-actions">
+      <button class="btn-small" id="btn-new-case">+ 新建病例（示例）</button>
+    </div>
+    <div class="case-list" id="case-list">
+      <div class="case-item active" data-name="张三 · 肺结节">
+        <div class="case-name">张三 · 肺结节</div>
+        <div class="case-meta">病例号：P20250101 · 状态：待分析</div>
+      </div>
+      <div class="case-item" data-name="李四 · 乳腺病理">
+        <div class="case-name">李四 · 乳腺病理</div>
+        <div class="case-meta">病例号：P20250102 · 状态：已生成草稿</div>
+      </div>
+      <div class="case-item" data-name="王五 · 结直肠病理">
+        <div class="case-name">王五 · 结直肠病理</div>
+        <div class="case-meta">病例号：P20250103 · 状态：已审核</div>
+      </div>
+    </div>
+    <div class="sidebar-footer">
+      演示说明：本列表为静态示例，实际系统可从后端加载病人列表。
+    </div>
+  </div>
+
+  <!-- 右侧：主区域 -->
+  <div class="main">
+    <!-- 顶部栏 -->
+    <div class="topbar">
+      <div class="topbar-left">
+        <div class="topbar-title">多模态智能病理诊断工作台</div>
+        <div class="topbar-sub">
+          当前病例：<span id="current-case-name">张三 · 肺结节</span>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <span>病理科 · 主治医生</span>
+        <div class="avatar">医</div>
+      </div>
+    </div>
+
+    <div class="content">
+      <!-- 中间：操作流程 -->
+      <div class="workspace">
+        <!-- 步骤条 -->
+        <div class="stepper">
+          <div class="step active" data-step="1">
+            <div class="step-number">1</div>
+            <div>上传多模态数据</div>
+          </div>
+          <div class="step" data-step="2">
+            <div class="step-number">2</div>
+            <div>配置模型与模态</div>
+          </div>
+          <div class="step" data-step="3">
+            <div class="step-number">3</div>
+            <div>启动推理</div>
+          </div>
+          <div class="step" data-step="4">
+            <div class="step-number">4</div>
+            <div>编辑与导出报告</div>
+          </div>
+        </div>
+
+        <!-- 步骤内容 -->
+        <div class="workspace-card">
+          <!-- Step 1 -->
+          <div class="step-page active" data-step="1">
+            <div class="step-header">
+              <div>
+                <div class="step-title">步骤 1 · 上传多模态数据</div>
+                <div class="step-desc">
+                  上传病理切片、病历文档与检验结果，系统会为本病例建立多模态视图。
+                </div>
+              </div>
+              <button class="btn-plain" id="btn-go-2">下一步</button>
+            </div>
+
+            <div class="field-group">
+              <div class="field-label">病理图像文件（WSI / 图片）</div>
+              <input type="file" id="input-image" multiple>
+              <div class="field-note">支持 .tiff / .svs / .ndpi / .png / .jpg 等格式（示例前端不做格式校验）。</div>
+              <div class="file-list" id="image-file-list"></div>
+            </div>
+
+            <div class="field-group">
+              <div class="field-label">电子病历 / 诊断说明（PDF / 文本）</div>
+              <input type="file" id="input-emr" multiple>
+              <div class="field-note">可上传门诊病历、住院病历、既往病理报告等文档。</div>
+              <div class="file-list" id="emr-file-list"></div>
+            </div>
+
+            <div class="field-group">
+              <div class="field-label">补充备注（可选）</div>
+              <textarea id="input-note" placeholder="例如：肿块发现时间、既往治疗史、临床怀疑诊断等……"></textarea>
+            </div>
+          </div>
+
+          <!-- Step 2 -->
+          <div class="step-page" data-step="2">
+            <div class="step-header">
+              <div>
+                <div class="step-title">步骤 2 · 配置模型与模态</div>
+                <div class="step-desc">
+                  选择要参与推理的数据模态与模型版本，可根据场景进行精细调节。
+                </div>
+              </div>
+              <div>
+                <button class="btn-plain" id="btn-back-1">上一步</button>
+                <button class="btn-plain" id="btn-go-3">下一步</button>
+              </div>
+            </div>
+
+            <div class="field-group">
+              <div class="field-label">参与推理的数据模态</div>
+              <div class="checkbox-row">
+                <input type="checkbox" id="mod-image" checked>
+                <label for="mod-image">病理图像</label>
+              </div>
+              <div class="checkbox-row">
+                <input type="checkbox" id="mod-emr" checked>
+                <label for="mod-emr">电子病历文本</label>
+              </div>
+              <div class="checkbox-row">
+                <input type="checkbox" id="mod-lab" checked>
+                <label for="mod-lab">检验 / 影像指标（如肿瘤标志物、CT 报告）</label>
+              </div>
+              <div class="field-note">勾选的模态会一起输入到多模态大模型中进行联合推理。</div>
+            </div>
+
+            <div class="field-group">
+              <div class="field-label">诊断模型选择</div>
+              <select id="model-select" style="width:100%;padding:6px;border-radius:8px;border:1px solid var(--border);">
+                <option value="lung-v1">肺癌专科模型 V1.2（偏重敏感性）</option>
+                <option value="breast-v1">乳腺病理模型 V1.0（偏重特异性）</option>
+                <option value="general-v0">通用肿瘤模型 V0.9（探索版）</option>
+              </select>
+              <div class="field-note">
+                实际系统可从后端动态获取可用模型版本，此处为前端示例。
+              </div>
+            </div>
+
+            <div class="field-group">
+              <div class="field-label">推理模式</div>
+              <div class="pill-list">
+                <span class="pill-tag">标准模式 · 平衡敏感性与特异性</span>
+                <span class="pill-tag">快速预筛 · 速度优先</span>
+                <span class="pill-tag">科研分析 · 输出更多中间特征</span>
+              </div>
+              <div class="field-note">你可以根据场景自定义不同推理模式的参数模板。</div>
+            </div>
+          </div>
+
+          <!-- Step 3 -->
+          <div class="step-page" data-step="3">
+            <div class="step-header">
+              <div>
+                <div class="step-title">步骤 3 · 启动推理</div>
+                <div class="step-desc">
+                  检查当前设置无误后，点击“启动推理”。本示例会生成一份假的 AI 结论方便你体验流程。
+                </div>
+              </div>
+              <div>
+                <button class="btn-plain" id="btn-back-2">上一步</button>
+                <button class="btn-plain" id="btn-go-4">下一步</button>
+              </div>
+            </div>
+
+            <div class="field-group">
+              <button class="btn-primary" id="btn-run">启动推理（示例）</button>
+              <div class="status" id="run-status">尚未运行推理。</div>
+            </div>
+
+            <div class="field-group">
+              <div class="field-label">AI 初步诊断结果（只读示例）</div>
+              <textarea id="ai-summary" readonly placeholder="点击“启动推理”后，这里会自动填充示例结论。"></textarea>
+            </div>
+          </div>
+
+          <!-- Step 4 -->
+          <div class="step-page" data-step="4">
+            <div class="step-header">
+              <div>
+                <div class="step-title">步骤 4 · 编辑与导出报告</div>
+                <div class="step-desc">
+                  在 AI 草稿的基础上人工审阅、修改，确认后导出报告用于病历系统或打印。
+                </div>
+              </div>
+              <div>
+                <button class="btn-plain" id="btn-back-3">上一步</button>
+              </div>
+            </div>
+
+            <div class="field-group">
+              <div class="field-label">病理报告内容（可编辑）</div>
+              <textarea id="report-text" placeholder="点击第 3 步的“启动推理”后，会自动生成一份示例报告草稿，你可以在这里修改。"></textarea>
+            </div>
+
+            <div class="field-group">
+              <button class="btn-primary" id="btn-export">导出报告（txt 示例）</button>
+              <div class="field-note">实际系统中可以导出为 .docx / .pdf，并自动回写至 HIS / EMR 系统。</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 右侧：AI 结果与关键依据 -->
+      <div class="side-panel">
+        <div class="side-panel-title">AI 推理结果与关键依据</div>
+        <div class="side-panel-sub">
+          本区域简要展示当前病例的 AI 结论与证据，便于医生快速浏览。
+        </div>
+
+        <div class="side-section-title">结论摘要</div>
+        <div class="side-box" id="side-summary">
+          尚未生成结论。请在左侧“步骤 3”中点击“启动推理”按钮。
+        </div>
+
+        <div class="side-section-title">可能诊断方向</div>
+        <div class="side-box" id="side-diagnosis">
+          -
+        </div>
+
+        <div class="side-section-title">提示与风险点</div>
+        <div class="side-box" id="side-risk">
+          -
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 简单状态管理
+    const state = {
+      currentStep: 1
+    };
+
+    // 选择病例
+    const caseList = document.getElementById('case-list');
+    const currentCaseLabel = document.getElementById('current-case-name');
+
+    caseList.addEventListener('click', (e) => {
+      const item = e.target.closest('.case-item');
+      if (!item) return;
+      document.querySelectorAll('.case-item').forEach(el => el.classList.remove('active'));
+      item.classList.add('active');
+      const name = item.getAttribute('data-name') || item.querySelector('.case-name').innerText;
+      currentCaseLabel.textContent = name;
+    });
+
+    document.getElementById('btn-new-case').addEventListener('click', () => {
+      const name = prompt('请输入新建病例名称（示例）：', '新病例 · 未命名');
+      if (!name) return;
+      const div = document.createElement('div');
+      div.className = 'case-item active';
+      div.setAttribute('data-name', name);
+      div.innerHTML = `
+        <div class="case-name">${name}</div>
+        <div class="case-meta">病例号：待分配 · 状态：新建</div>
+      `;
+      document.querySelectorAll('.case-item').forEach(el => el.classList.remove('active'));
+      caseList.prepend(div);
+      currentCaseLabel.textContent = name;
+    });
+
+    // 步骤切换
+    function gotoStep(step) {
+      state.currentStep = step;
+      document.querySelectorAll('.step').forEach(el => {
+        el.classList.toggle('active', Number(el.dataset.step) === step);
+      });
+      document.querySelectorAll('.step-page').forEach(el => {
+        el.classList.toggle('active', Number(el.dataset.step) === step);
+      });
+    }
+
+    document.querySelectorAll('.step').forEach(el => {
+      el.addEventListener('click', () => {
+        gotoStep(Number(el.dataset.step));
+      });
+    });
+
+    document.getElementById('btn-go-2').onclick   = () => gotoStep(2);
+    document.getElementById('btn-back-1').onclick = () => gotoStep(1);
+    document.getElementById('btn-go-3').onclick   = () => gotoStep(3);
+    document.getElementById('btn-back-2').onclick = () => gotoStep(2);
+    document.getElementById('btn-go-4').onclick   = () => gotoStep(4);
+    document.getElementById('btn-back-3').onclick = () => gotoStep(3);
+
+    // 文件上传展示（只显示文件名，不上传）
+    function bindFileList(inputId, listId) {
+      const input = document.getElementById(inputId);
+      const list = document.getElementById(listId);
+      input.addEventListener('change', () => {
+        const files = Array.from(input.files || []);
+        if (!files.length) {
+          list.textContent = '尚未选择文件。';
+          return;
+        }
+        list.innerHTML = '已选择：<br>' + files.map(f => `• ${f.name}`).join('<br>');
+      });
+    }
+    bindFileList('input-image', 'image-file-list');
+    bindFileList('input-emr', 'emr-file-list');
+
+    // 启动推理（示例：本地生成一段假结论）
+    const btnRun = document.getElementById('btn-run');
+    const runStatus = document.getElementById('run-status');
+    const aiSummary = document.getElementById('ai-summary');
+    const sideSummary = document.getElementById('side-summary');
+    const sideDiag = document.getElementById('side-diagnosis');
+    const sideRisk = document.getElementById('side-risk');
+    const reportText = document.getElementById('report-text');
+
+    btnRun.addEventListener('click', () => {
+      const caseName = currentCaseLabel.textContent.trim();
+      runStatus.textContent = '推理完成（示例数据，本页面未连接真实后端）。';
+
+      const summaryText =
+`【AI 初步分析（示例）】
+病例：${caseName}
+
+结合病理图像与电子病历信息，模型提示：
+1. 肿瘤细胞呈弥漫性分布，局部可见腺样结构；
+2. 细胞核异型性中-重度，可见核分裂像增多；
+3. 肿瘤侵及基底膜，部分区域疑似侵犯血管/淋巴管。`;
+
+      const diagText =
+`· 考虑恶性肿瘤的可能性较大；
+· 优先考虑原发肺腺癌（示例内容，可根据实际场景调整）。`;
+
+      const riskText =
+`· 建议结合影像学检查（CT / PET-CT）进一步评估病灶范围；
+· 建议补充免疫组化、分子病理检测（EGFR、ALK 等）以指导后续治疗决策；
+· 以上结论仅为 AI 辅助结果，需由病理科医生最终确认。`;
+
+      aiSummary.value = summaryText;
+      sideSummary.textContent = 'AI 已生成初步分析（示例），详情见左侧步骤 3 文本框。';
+      sideDiag.textContent = diagText;
+      sideRisk.textContent = riskText;
+
+      // 同时生成一份报告草稿放入 Step 4
+      reportText.value =
+`【病理诊断报告草稿（示例）】
+
+一、基本信息
+病例：${caseName}
+送检材料：肺部病变组织（活检）
+临床信息：具体临床资料待补充。
+
+二、镜下所见
+1. 肿瘤细胞弥漫性增生，局部形成腺样/乳头状结构；
+2. 细胞核中-重度异型，核深染，可见核分裂像增多；
+3. 部分区域可见肿瘤细胞侵及基底膜，疑似侵犯血管/淋巴管；
+4. 间质纤维化及炎性细胞浸润不同程度存在。
+
+三、初步病理诊断（AI 草稿，仅供参考）
+结合形态学特征，倾向恶性肿瘤（考虑原发性肺腺癌可能性大）。
+具体分型及分级建议结合免疫组化及临床资料进一步综合判断。
+
+四、建议
+1. 建议完善相关免疫组化及分子病理检测（如 EGFR、ALK 等）；
+2. 建议结合影像学（CT / PET-CT）评估病变范围；
+3. 本报告为 AI 辅助手段自动生成草稿，最终诊断结论须由病理科医生审核确认。`;
+    });
+
+    // 导出报告为 txt
+    document.getElementById('btn-export').addEventListener('click', () => {
+      const text = reportText.value || '尚未填写报告内容。';
+      const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'pathology-report-demo.txt';
+      document.body.appendChild(a);
+      a.click();
+      URL.revokeObjectURL(url);
+      a.remove();
+    });
+  </script>
+</body>
+</html>
